@@ -1,0 +1,193 @@
+sql> sys as sysdba
+____________________________________________________________________________________________________
+When you connect to the Oracle database server, you connect to a container database (CDB) named ROOT. 
+To show the current database, you use the SHOW command:
+
+SQL> SHOW con_name;
+
+CON_NAME
+------------------------------
+CDB$ROOT
+
+____________________________________________________________________________________________________
+
+To switch to the XEPDB1 pluggable database, you use the following statement:
+
+SQL> ALTER SESSION SET CONTAINER = xepdb1;
+
+SQL> SHOW con_name;
+
+CON_NAME
+------------------------------
+XEPDB1
+
+____________________________________________________________________________________________________
+
+Before creating a new user, you need to change the database to open by executing the following command:
+
+SQL> ALTER DATABASE OPEN;
+
+Database altered.
+
+____________________________________________________________________________________________________
+
+Then, you create a new user for creating the sample database in the pluggable database using the following CREATE USER statement:
+
+SQL> CREATE USER OT IDENTIFIED BY Orcl1234;
+
+User created.
+
+
+
+The above statement created a new user named OT with a password specified after the 
+IDENTIFIED BY clause, which is Orcl1234 in this case.
+
+After that, you grant privileges to the OT user by using the following GRANT statement:
+
+SQL> GRANT CONNECT, RESOURCE, DBA TO OT;
+
+Grant succeeded.
+
+User needs to be creted only once. No need to create everytime you login.
+____________________________________________________________________________________________________
+Finally, you can connect to the pluggable database ( PDBORCL) using the OT user account. 
+Type the password ( Orcl1234) for the OT user when SQL*plus prompts you for the password.
+
+SQL> CONNECT ot@xepdb1
+Enter password: orcl1234
+Connected.
+
+Note that OT user only exists in the XEPDB1 pluggable database, 
+therefore, you must explicitly specify the username as ot@xepdb1 in the CONNECT command.
+
+
+____________________________________________________________________________________________________
+Do this only if you get an error:
+
+Connect to database:
+SQL> CONNECT OT@XEPDB1;
+Enter password:
+ERROR:
+ORA-12541: TNS:no listener
+
+TROUBLESHOOTING:
+
+Update: listener.ora
+-> C:\app\Admin\product\21c\homes\OraDB21Home1\network\admin
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1521))
+    )
+  )
+
+Update: tnsnames.ora
+
+XEPDB1 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = xepdb1)
+    )
+  )
+
+Restart Windows Services:
+WIN+R -> services.msc
+
+Redo above steps and issue the connect command:
+
+SQL> CONNECT ot@xepdb1
+Enter password:
+Connected.
+
+____________________________________________________________________________________________________
+
+
+
+To create tables in the sample database, you need to execute the statements 
+in the ot_schema.sql file from SQL*plus.
+
+SQL>@c:\dbsample\ot_schema.sql
+SQL> SELECT table_name FROM user_tables ORDER BY table_name;
+
+____________________________________________________________________________________________________
+Loading data to tables:
+
+SQL>@c:\dbsample\ot_data.sql
+SQL> SELECT COUNT(*) FROM contacts;
+
+____________________________________________________________________________________________________
+
+Select the tables:
+
+SQL> SELECT table_name FROM user_tables ORDER BY table_name;
+
+TABLE_NAME
+--------------------------------------------------------------------------------
+CONTACTS
+COUNTRIES
+CUSTOMERS
+DEPARTMENTS
+EMPLOYEES
+INVENTORIES
+LOCATIONS
+ORDERS
+ORDER_ITEMS
+PRODUCTS
+PRODUCT_CATEGORIES
+
+TABLE_NAME
+--------------------------------------------------------------------------------
+REGIONS
+WAREHOUSES
+
+13 rows selected.
+
+____________________________________________________________________________________________________
+
+SQL> SELECT COUNT(*) FROM contacts;
+
+  COUNT(*)
+----------
+       319
+
+____________________________________________________________________________________________________
+
+To list all the PDBs:
+
+SELECT * FROM DBA_PDBS;
+
+____________________________________________________________________________________________________
+
+Oracle has no databases but schemas, you can list them with
+
+SQL>SELECT USERNAME FROM ALL_USERS ORDER BY USERNAME;
+
+____________________________________________________________________________________________________
+
+You can drop a user using: 
+
+Example: DROP USER foobar;
+You cannot drop user that is currently Connected
+
+____________________________________________________________________________________________________
+
+Download and execute SQL Developer
+Create a connection to the running Oracle database
+
+Test using: 
+SELECT table_name FROM user_tables ORDER BY table_name;
+
+
+___________________________________________________________________________________________________
+Questions:
+
+1. Command to show the connection name
+2. What is the command to create a user called RAM with password 1234?
+3. A user called RAM and his password is 1234 wants to connect to a database called TRAINING, the 
+   command is?
+4. List all the PDBs 
+5. Create a user with your name and grant permissions connet, dba, resource
