@@ -1,0 +1,148 @@
+Query data from a single column
+
+SELECT
+  name
+FROM
+  customers;
+
+---------------------------------------------------
+Querying data from multiple columns
+
+SELECT
+    customer_id,
+    name,
+    credit_limit
+FROM
+    customers;
+
+
+---------------------------------------------------
+Querying data from all columns of a table
+
+SELECT * FROM customers;
+
+
+______________________________________________________________________________________ Set 2
+
+Sorting rows by a column example
+To sort the customer data by names alphabetically in ascending order, you use the following statement:
+
+SELECT
+    name,
+    address,
+    credit_limit
+FROM
+    customers
+ORDER BY
+    name ASC;
+
+---------------------------------------------------
+To sort customer by name alphabetically in descending order, you explicitly use DESC 
+after the column name in the ORDER BY clause as follows:
+
+SELECT
+    name,
+    address,
+    credit_limit
+FROM
+    customers
+ORDER BY
+    name DESC;
+---------------------------------------------------
+
+Sorting rows by multiple columns example
+To sort multiple columns, you separate each column in the ORDER BY clause by a comma.
+
+SELECT
+	first_name,
+	last_name
+FROM
+	contacts
+ORDER BY
+	first_name,
+	last_name DESC;
+---------------------------------------------------
+
+Sort rows by column’s positions example
+You don’t need to specify the column names for sorting the data. If you prefer, you can use 
+the positions of the column in the ORDER BY clause.
+
+SELECT
+    name,
+    credit_limit
+FROM
+    customers
+ORDER BY
+    2 DESC,
+    1;
+
+---------------------------------------------------
+
+Sorting rows with NULL values 
+
+SELECT
+    country_id,
+    city,
+    state
+FROM
+    locations
+ORDER BY
+    city,
+    state;
+
+The following statement sorts the locations by state in ascending order and places 
+NULL values first.
+
+SELECT
+    country_id,
+    city,
+    state
+FROM
+    locations
+ORDER BY
+    state ASC NULLS FIRST;
+
+To place NULL values after the non-NULL values, you use NULLS LAST
+
+SELECT 
+   country_id, 
+   city, 
+   state 
+FROM 
+   locations 
+ORDER BY 
+   state 
+ASC NULLS LAST;
+
+---------------------------------------------------
+
+Sorting rows by the result of a function or expression
+The ORDER BY clause allows you to apply a function e.g., string function and math function 
+on a column and sorts the data by the result of the function.
+
+For example, the following statement uses the UPPER() function in the ORDER BY clause 
+to sort the customer names case-insensitively
+
+SELECT
+	customer_id,
+	name
+FROM
+	customers
+ORDER BY
+	UPPER( name );
+
+
+---------------------------------------------------
+Sorting by date 
+
+SELECT 
+   order_id, 
+   customer_id, 
+   status, 
+   order_date
+FROM 
+   orders
+ORDER BY 
+   order_date DESC;
+
+   

@@ -1,0 +1,92 @@
+The GROUP BY clause is used in a SELECT statement to group rows into a set of summary 
+rows by values of columns or expressions. The GROUP BY clause returns one row per group.
+
+The GROUP BY clause is often used with aggregate functions such as AVG(), COUNT(), MAX(), 
+MIN() and SUM(). In this case, the aggregate function returns the summary information 
+per group. For example, given groups of products in several categories, the AVG() 
+function returns the average price of products in each category.
+
+Oracle GROUP BY with an aggregate function example
+The following statement returns the number of orders by customers:
+
+SELECT
+    customer_id,
+    COUNT( order_id )
+FROM
+    orders
+GROUP BY
+    customer_id
+ORDER BY
+    customer_id;
+
+Oracle GROUP BY with an expression example
+The following example groups the orders by year and returns the number of orders per year.
+
+SELECT
+    EXTRACT(YEAR FROM order_date) YEAR,
+    COUNT( order_id )
+FROM
+    orders
+GROUP BY
+    EXTRACT(YEAR FROM order_date)
+ORDER BY
+    YEAR;
+
+
+---------------------------------------------------------------------------
+
+The HAVING clause is an optional clause of the SELECT statement. It is used to filter groups 
+of rows returned by the GROUP BY clause. This is why the HAVING clause is usually used with 
+the GROUP BY clause.
+
+Simple Oracle HAVING example
+The following statement uses the GROUP BY clause to retrieve the orders and their values from the order_items table:
+
+SELECT
+    order_id,
+    SUM( unit_price * quantity ) order_value
+FROM
+    order_items
+GROUP BY
+    order_id
+ORDER BY
+    order_value DESC;
+
+To find the orders whose values are greater than 1 million, you add a HAVING clause as follows:
+
+SELECT
+    order_id,
+    SUM( unit_price * quantity ) order_value
+FROM
+    order_items
+GROUP BY
+    order_id
+HAVING
+    SUM( unit_price * quantity ) > 1000000
+ORDER BY
+    order_value DESC;
+
+Oracle HAVING with complex condition example
+You can use a complex filter condition in the HAVING clause to filter groups.
+
+For example, the following statement finds orders whose values are greater than 500,000 and the number of products in each order is between 10 and 12:
+
+SELECT
+    order_id,
+    COUNT( item_id ) item_count,
+    SUM( unit_price * quantity ) total
+FROM
+    order_items
+GROUP BY
+    order_id
+HAVING
+    SUM( unit_price * quantity ) > 500000 AND
+    COUNT( item_id ) BETWEEN 10 AND 12
+ORDER BY
+    total DESC,
+    item_count DESC;
+
+---------------------------------------------------------------------------
+
+
+
