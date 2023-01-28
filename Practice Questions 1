@@ -1,0 +1,14 @@
+Practice Questions:
+
+1. Print the table customers with cutomer_id in ascending order (2)
+2. What is the total amount for every order id 
+   and what are the top 5 most sold orders? (3)
+3. What is the number of employees hired during every given year? (3)
+4. List the standard_cost, list_price and quantity in warehouse for each product? (3)
+5. Select all the products ordered by a given customer_id = 1, 5, 201 and
+   arrange then customer_id wise, also get the customer full_name (5)
+6. List how many orders where shipped each year (5)
+
+Refer:
+
+schema in the repository
