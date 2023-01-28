@@ -1,0 +1,94 @@
+-- Setting up sample tables
+
+CREATE TABLE palette_a (
+    id INT PRIMARY KEY,
+    color VARCHAR2 (100) NOT NULL
+);
+
+CREATE TABLE palette_b (
+    id INT PRIMARY KEY,
+    color VARCHAR2 (100) NOT NULL
+);
+
+INSERT INTO palette_a (id, color)
+VALUES (1, 'Red');
+
+INSERT INTO palette_a (id, color)
+VALUES (2, 'Green');
+
+INSERT INTO palette_a (id, color)
+VALUES (3, 'Blue');
+
+INSERT INTO palette_a (id, color)
+VALUES (4, 'Purple');
+
+-- insert data for the palette_b
+INSERT INTO palette_b (id, color)
+VALUES (1, 'Green');
+
+INSERT INTO palette_b (id, color)
+VALUES (2, 'Red');
+
+INSERT INTO palette_b (id, color)
+VALUES (3, 'Cyan');
+
+INSERT INTO palette_b (id, color)
+VALUES (4, 'Brown');
+
+-- ORacle inner join 
+
+SELECT
+    a.id id_a,
+    a.color color_a,
+    b.id id_b,
+    b.color color_b
+FROM
+    palette_a a
+INNER JOIN palette_b b ON a.color = b.color;
+
+-- Oracle left join
+
+SELECT
+    a.id id_a,
+    a.color color_a,
+    b.id id_b,
+    b.color color_b
+FROM
+    palette_a a
+LEFT JOIN palette_b b ON a.color = b.color;
+
+-- Oracle right join
+
+SELECT
+    a.id id_a,
+    a.color color_a,
+    b.id id_b,
+    b.color color_b
+FROM
+    palette_a a
+RIGHT JOIN palette_b b ON a.color = b.color;
+
+-- Oracle full outer join
+
+SELECT
+    a.id id_a,
+    a.color color_a,
+    b.id id_b,
+    b.color color_b
+FROM
+    palette_a a
+FULL OUTER JOIN palette_b b ON a.color = b.color;
+
+To get a set of rows that are unique from the left and right tales, 
+you perform the same full join and then exclude the rows that you don’t want from both 
+sides using a WHERE clause as follows
+
+SELECT
+    a.id id_a,
+    a.color color_a,
+    b.id id_b,
+    b.color color_b
+FROM
+    palette_a a
+FULL JOIN palette_b b ON a.color = b.color
+WHERE a.id IS NULL OR b.id IS NULL;
