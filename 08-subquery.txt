@@ -1,0 +1,408 @@
+-- A subquery is a SELECT statement nested inside another statement such as SELECT, INSERT, UPDATE, or DELETE. 
+-- Typically, you can use a subquery anywhere that you use an expression.
+
+-- The following query uses the MAX() function to return the highest list price from the products table:
+
+SELECT
+    MAX( list_price )
+FROM
+    products;
+    
+-- To select the detailed information of the most expensive products, you use the list price above (8867.99) in the following query
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price = 8867.99;
+    
+-- As you can see, we need to execute two queries separately to get the most expensive product information. 
+-- By using a subquery, we can nest the first query inside the second one as shown in the following statement:
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price = (
+        SELECT
+            MAX( list_price )
+        FROM
+            products
+    );
+    
+-- The following statement returns the product name, list price, and the average list prices of products according to their categories
+
+SELECT
+    product_name,
+    list_price,
+    ROUND(
+        (
+            SELECT
+                AVG( list_price )
+            FROM
+                products p1
+            WHERE
+                p1. category_id = p2.category_id
+        ),2) avg_list_price
+FROM
+    products p2
+ORDER BY
+    product_name;
+    
+    
+--  the following statement returns the top 10 orders with the highest values:
+
+SELECT
+    order_id,
+    order_value
+FROM
+    (
+        SELECT
+            order_id,
+            SUM( quantity * unit_price ) order_value
+        FROM
+            order_items
+        GROUP BY
+            order_id
+        ORDER BY
+            order_value DESC
+    )
+FETCH FIRST 10 ROWS ONLY; 
+
+-- the following query finds products whose list price is greater than the average list price.
+-- Observe the use of comparison operators
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price > (
+        SELECT
+            AVG( list_price )
+        FROM
+            products
+    )
+ORDER BY
+    product_name;
+    
+-- the following query finds the salesman who has sales above 100K in 2017
+
+SELECT
+    employee_id,
+    first_name,
+    last_name
+FROM
+    employees
+WHERE
+    employee_id IN(
+        SELECT
+            salesman_id
+        FROM
+            orders
+        INNER JOIN order_items
+                USING(order_id)
+        WHERE
+            status = 'Shipped'
+        GROUP BY
+            salesman_id,
+            EXTRACT(YEAR FROM order_date)
+        HAVING
+            SUM( quantity * unit_price )  >= 1000000  
+            AND EXTRACT(YEAR FROM order_date) = 2017
+            AND salesman_id IS NOT NULL
+    )
+ORDER BY
+    first_name,
+    last_name;
+    
+-- The following statement finds all customers who have not yet placed an order in 2017:
+
+SELECT
+    name
+FROM
+    customers
+WHERE
+    customer_id NOT IN(
+        SELECT
+            customer_id
+        FROM
+            orders
+        WHERE
+            EXTRACT(
+                YEAR
+            FROM
+                order_date) = 2017
+            
+    )
+ORDER BY
+    name;
+
+----------------------------------------------------------------------------------------
+
+-- CORRELATED SUB-Query
+-- Oracle correlated subquery which is a subquery 
+-- whose some clauses refer to the column expressions in the outer query
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price =(
+        SELECT
+            MIN( list_price )
+        FROM
+            products
+    );
+
+
+-- The following query finds all products whose list price is above average for their category
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products p
+WHERE
+    list_price > (
+        SELECT
+            AVG( list_price )
+        FROM
+            products
+        WHERE
+            category_id = p.category_id
+    );
+
+-- In the above query, the outer query is:
+
+SELECT
+    product_id,
+    product_name,
+    list_price
+FROM
+    products p
+WHERE
+    list_price >
+
+-- And the correlated subquery is:
+
+SELECT
+    AVG( list_price )
+FROM
+    products
+WHERE
+    category_id = p.category_id
+
+-- For each product from the products table, Oracle has to execute the correlated subquery 
+-- to calculate the average price by category.
+
+-- See the customers and orders tables in the sample database
+-- The following example uses the EXISTS operator to find all customers who have the order.
+
+SELECT
+    name
+FROM
+    customers c
+WHERE
+    EXISTS (
+        SELECT
+            1
+        FROM
+            orders
+        WHERE
+            customer_id = c.customer_id
+    )
+ORDER BY
+    name;
+
+-- See the warehouses and locations tables
+
+UPDATE
+    warehouses w
+SET
+    warehouse_name = warehouse_name || ', USA'
+WHERE
+    EXISTS (
+        SELECT
+            1
+        FROM
+            locations
+        WHERE
+            country_id = 'US'
+            AND location_id = w.location_id
+    );
+
+-- Oracle EXISTS vs. IN
+-- The EXISTS operator stops scanning rows once the subquery returns 
+-- the first row because it can determine the result whereas the IN operator 
+-- must scan all rows returned by the subquery to conclude the result.
+
+CREATE TABLE customers_2016(
+    company_id NUMBER GENERATED BY DEFAULT AS IDENTITY,
+    company varchar2(255) NOT NULL,
+    first_name varchar2(255) NOT NULL,
+    last_name varchar2(255) NOT NULL,
+    email varchar2(255) NOT NULL,
+    sent_email CHAR(1) DEFAULT 'N',
+    PRIMARY KEY(company_id)
+);
+
+--  insert customers who had orders in 2016 into the customers_2016 table
+
+INSERT
+    INTO
+        customers_2016(
+            company,
+            first_name,
+            last_name,
+            email
+        ) 
+        SELECT
+            name company,
+            first_name,
+            last_name,
+            email
+        FROM
+            customers c
+        INNER JOIN contacts ON
+            contacts.customer_id = c.customer_id
+        WHERE
+            EXISTS(
+                SELECT
+                    *
+                FROM
+                    orders
+                WHERE
+                    customer_id = c.customer_id
+                    AND EXTRACT(
+                        YEAR
+                    FROM
+                        order_date
+                    
+            )
+        ORDER BY
+            company;
+
+-- The following statement finds all customers who have no order
+
+SELECT
+    name
+FROM
+    customers
+WHERE
+    NOT EXISTS (
+        SELECT
+            NULL
+        FROM
+            orders
+        WHERE
+            orders.customer_id = customers.customer_id
+    )
+ORDER BY
+    name;
+
+-- To update the credit limit of customers who have no order in 2017, 
+-- you use the following UPDATE statement:
+
+CREATE TABLE customers_archive AS
+SELECT * 
+FROM
+    customers
+WHERE
+    NOT EXISTS (
+        SELECT
+            NULL
+        FROM
+            orders
+        WHERE
+            orders.customer_id = customers.customer_id
+    );
+
+UPDATE
+    customers
+SET
+    credit_limit = 0
+WHERE
+    NOT EXISTS(
+        SELECT
+            NULL
+        FROM
+            orders
+        WHERE
+            orders.customer_id = customers.customer_id
+            AND EXTRACT(
+                YEAR
+            FROM
+                order_date
+            
+    );
+
+-- And to delete all customers who had no order in 2016 and 2017 
+-- from the customers table, you use the following DELETE statement
+
+DELETE
+FROM
+    customers
+WHERE
+    NOT EXISTS(
+        SELECT
+            NULL
+        FROM
+            orders
+        WHERE
+            orders.customer_id = customers.customer_id
+            AND EXTRACT(
+                YEAR FROMorder_date
+            ) IN(
+                2016,
+                2017
+            )
+    );
+
+-- The ANY and ALL operators
+
+SELECT
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price = ANY(
+        2200,
+        2259.99,
+        2269.99
+    )
+    AND category_id = 1;
+
+-- You could use >, <, !=, <=, >= operators
+-- the following query finds all products whose list prices 
+-- are greater than the highest price of the average price list
+
+SELECT
+    product_name,
+    list_price
+FROM
+    products
+WHERE
+    list_price > ALL(
+        SELECT
+            AVG( list_price )
+        FROM
+            products
+        GROUP BY
+            category_id
+    )
+ORDER BY
+    list_price ASC;
