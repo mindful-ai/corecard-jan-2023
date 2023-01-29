@@ -1,0 +1,13 @@
+-- Questions:
+
+-- 1. Obserrve products and inventories, list the top 5 products with highest inventories
+-- 2. List the customers who placed orders in 2017
+-- 3. Name the products whose list price is lesser than the average price
+-- 4. Name all the order items which made a business of atleast 1000000
+-- 5. Which is the product which has the maximum list price
+-- 6. List the first name, last name of salesmen and companies from which they brought orders but still orders in pending 
+-- 7. How many categories of products are there and which category has the highest number of pending orders
+-- 8. Get all the warehouses in US and update the warehouse names as <region> || <existing warehouse name>
+-- 9. Make one table customers placing order in 2017 say customers_2017 and add a new column in that table called credit_limit\
+--    If they have placed an order in 2016 give them 100000 as their credit limit
+-- 10. Increase the list price of all the products in the US locations by 15%
