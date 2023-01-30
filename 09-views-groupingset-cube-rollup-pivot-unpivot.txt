@@ -1,0 +1,524 @@
+-- VIEWS
+
+--The result of a query is a derived table as shown in the following example:
+
+SELECT
+    name,
+    credit_limit
+FROM
+    customers;
+    
+--The derived table consists of the name and credit limit (credit_limit) columns with many rows. 
+--It contains only partial data from the customers table.
+--If you give this query a name, then you have a view. This is why sometimes a view is referred to as a named query.
+--So by definition, a view is a “virtual” table whose data is the result of a stored query, 
+--which is derived each time when you query against the view.
+--A view is a virtual table because you can use it like a table in your SQL queries. 
+--Every view has columns with data types so you can execute a query against views or 
+--manage their contents (with some restrictions) using the INSERT, UPDATE, DELETE, and MERGE statements.
+
+-- See the following employees table from the sample database.
+-- Let's create a view:
+
+CREATE VIEW employee_yos AS
+SELECT
+    employee_id,
+    first_name || ' ' || last_name full_name,
+    FLOOR( months_between( CURRENT_DATE, hire_date )/ 12 ) yos
+FROM
+    employees;
+    
+--The following query returns employees whose years of service are 15:
+
+SELECT
+    *
+FROM
+    employee_yos
+WHERE
+    yos = 15
+ORDER BY
+    full_name; 
+    
+-- The following example creates a read-only view named customer_credits, which is based on the customers table. 
+-- The view contains three columns: customer id, customer name and credit limit:
+
+CREATE OR REPLACE VIEW customer_credits(
+        customer_id,
+        name,
+        credit
+    ) AS 
+SELECT
+        customer_id,
+        name,
+        credit_limit
+    FROM
+        customers WITH READ ONLY;
+
+--Creating a Join view example
+--A join view is a view whose defining query contains a join, e.g., inner join or left join. 
+--The following statement creates a view named backlogs whose the defining query includes join 
+--clauses that join three tables: orders, order_items, and products.
+
+CREATE OR REPLACE VIEW backlogs AS
+SELECT
+    product_name,
+    EXTRACT(
+        YEAR
+    FROM
+        order_date
+    ) YEAR,
+    SUM( quantity * unit_price ) amount
+FROM
+    orders
+INNER JOIN order_items
+        USING(order_id)
+INNER JOIN products
+        USING(product_id)
+WHERE
+    status = 'Pending'
+GROUP BY
+    EXTRACT(
+        YEAR
+    FROM
+        order_date
+    ),
+    product_name;
+    
+-- Dropping a view
+
+CREATE VIEW salesman_contacts AS 
+SELECT
+    first_name,
+    last_name,
+    email,
+    phone
+FROM
+    salesman;
+    
+SELECT
+    *
+FROM
+    salesman_contacts;
+    
+DROP VIEW salesman;    
+------------------------------------------------------------------------------
+
+--Let’s create a view that returns sales amounts by product category and customer.
+--For the demonstration purpose, we will pick only two customers whose identities are 1 and 2.
+--Here is the statement for creating the view:
+
+CREATE VIEW customer_category_sales AS
+SELECT 
+    category_name category, 
+    customers.name customer, 
+    SUM(quantity*unit_price) sales_amount
+FROM 
+    orders
+    INNER JOIN customers USING(customer_id)
+    INNER JOIN order_items USING (order_id)
+    INNER JOIN products USING (product_id)
+    INNER JOIN product_categories USING (category_id)
+WHERE 
+    customer_id IN (1,2)
+GROUP BY 
+    category_name, 
+    customers.name;
+
+
+SELECT 
+    customer, 
+    category, 
+    sales_amount 
+FROM 
+    customer_category_sales
+ORDER BY
+    customer,
+    category;
+    
+SELECT 
+    category, 
+    SUM(sales_amount) 
+FROM 
+    customer_category_sales
+GROUP BY 
+    category;
+    
+SELECT 
+    customer, 
+    SUM(sales_amount)
+FROM 
+    customer_category_sales
+GROUP BY 
+    customer;     
+    
+SELECT 
+    customer, 
+    category, 
+    sales_amount 
+FROM 
+    customer_category_sales
+ORDER BY
+    customer,
+    category;
+    
+    
+--So far, we have four queries that return 4 grouping sets: (category), (customer), (category, customer), and ().
+--If you want to return four grouping sets in one query, you need to use the UNION ALL operator.
+--However, the UNION ALL operator requires all involved queries return the same number of columns. 
+--Therefore, to make it works, you need to add NULL to the select list of each query as shown in the following query:
+
+SELECT 
+    category, 
+    NULL,
+    SUM(sales_amount) 
+FROM 
+    customer_category_sales
+GROUP BY 
+    category
+UNION ALL    
+SELECT 
+    customer,
+    NULL,
+    SUM(sales_amount)
+FROM 
+    customer_category_sales
+GROUP BY 
+    customer
+UNION ALL
+SELECT 
+    customer, 
+    category, 
+    sum(sales_amount)
+FROM 
+    customer_category_sales
+GROUP BY 
+    customer,
+    category
+UNION ALL   
+SELECT
+    NULL,
+    NULL,
+    SUM(sales_amount)
+FROM 
+    customer_category_sales;
+    
+--This query has two main issues:
+--
+--It is so lengthy that make it difficult to read and maintain.
+--Its performance is not optimal because Oracle has to execute 4 queries separately first and 
+--then combine all the immediate result sets into a single one.
+--This is why Oracle introduced the GROUPING SETS expression to cope with these issues.
+
+SELECT 
+    customer, 
+    category,
+    SUM(sales_amount)
+FROM 
+    customer_category_sales
+GROUP BY 
+    GROUPING SETS(
+        (customer,category),
+        (customer),
+        (category),
+        ()
+    )
+ORDER BY 
+    customer, 
+    category;
+    
+--The GROUPING() function differentiates the super-aggregate rows from regular grouped rows. 
+--The following illustrates the basic syntax of the GROUPING() function:
+
+SELECT 
+    customer, 
+    category,
+    GROUPING(customer) customer_grouping,
+    GROUPING(category) category_grouping,
+    SUM(sales_amount) 
+FROM customer_category_sales
+GROUP BY 
+    GROUPING SETS(
+        (customer,category),
+        (customer),
+        (category),
+        ()
+    )
+ORDER BY 
+    customer, 
+    category;
+
+
+--The GROUPING_ID() function takes the “group by” columns and returns a number denoting the GROUP BY level. 
+--In other words, it provides another compact way to identify the subtotal rows.
+
+SELECT 
+    customer, 
+    category,
+    GROUPING_ID(customer,category) grouping,
+    SUM(sales_amount) 
+FROM customer_category_sales
+GROUP BY 
+    GROUPING SETS(
+        (customer,category),
+        (customer),
+        (category),
+        ()
+    )
+ORDER BY 
+    customer, 
+    category;
+
+--------------------------------------------------------------------------------------------
+
+-- CUBE
+--The CUBE is an extension of the GROUP BY clause that allows you to generate grouping sets for all possible combinations of dimensions.
+--The CUBE generates grouping sets of all combinations of c1, c2 and c3 dimensions, which returns 8 grouping sets.
+--In general, if you have n columns specified in the CUBE, you will get 2**n grouping sets.
+--When the aggregate function is the SUM() function, you will have 2n subtotals for all the possible combinations of dimensions.
+
+
+--See the following customer_category_sales view that returns sales amounts for all product categories 
+--and customers with the identity of 1 and 2
+
+CREATE OR ALTER VIEW customer_category_sales AS
+SELECT 
+    category_name category, 
+    customers.name customer, 
+    SUM(quantity*unit_price) sales_amount
+FROM 
+    orders
+    INNER JOIN customers USING(customer_id)
+    INNER JOIN order_items USING (order_id)
+    INNER JOIN products USING (product_id)
+    INNER JOIN product_categories USING (category_id)
+WHERE 
+    customer_id IN (1,2)
+GROUP BY 
+    category_name, 
+    customers.name;
+    
+-- This example uses the CUBE to generate subtotals for product category and customer and 
+-- grand total for these customers (customer id 1 and 2) and all product categories:
+
+SELECT
+    category,
+    customer,
+    SUM(sales_amount) 
+FROM 
+    customer_category_sales
+GROUP BY 
+    CUBE(category,customer)
+ORDER BY 
+    category NULLS LAST, 
+    customer NULLS LAST;
+    
+--In this example, we have two dimensions: category and customer, therefore, the statement returns 4 subtotals:
+--
+--A subtotal by category.
+--A subtotal by customer.
+--A subtotal by both category and customer.
+--A grand total.    
+
+
+-----------------------------------------------------------------------------------------------------
+
+-- ROLL UP
+-- Oracle ROLLUP extension to generate reports that contain subtotals and totals.
+
+--Consider the following orders and order_items tables in the sample database:
+--The following query returns the sales revenue by customers in the year of 2017. 
+--It calculates net values for the sales orders with the Shipped status and is in charge of a salesman.
+
+SELECT
+   customer_id,
+   SUM(quantity * unit_price) amount
+FROM
+   orders
+INNER JOIN order_items USING (order_id)
+WHERE
+   status      = 'Shipped' AND 
+   salesman_id IS NOT NULL AND 
+   EXTRACT(YEAR FROM order_date) = 2017
+GROUP BY
+   customer_id
+ORDER BY
+   amount DESC;
+   
+   
+-- To get the sum of the values in the amount column, you may come up with the following subquery:
+
+SELECT
+   SUM(amount)
+FROM
+   (
+      SELECT
+         customer_id,
+         SUM(quantity * unit_price) amount
+      FROM
+         orders
+      INNER JOIN order_items USING (order_id)
+      WHERE
+         status      = 'Shipped' AND 
+         salesman_id IS NOT NULL AND 
+         EXTRACT(YEAR FROM order_date) = 2017
+      GROUP BY
+         customer_id
+   );
+
+-- Oracle provides a better and faster way to calculate the grand total by using the ROLLUP as shown in the following query:
+
+SELECT
+   customer_id,
+   SUM(quantity * unit_price) amount
+FROM
+   orders
+INNER JOIN order_items USING (order_id)
+WHERE
+   status      = 'Shipped' AND 
+   salesman_id IS NOT NULL AND 
+   EXTRACT(YEAR FROM order_date) = 2017
+GROUP BY
+   ROLLUP(customer_id);
+   
+--In this query, we used the ROLLUP expression to calculate the grand total of sales amounts of the selected orders.
+--As shown clearly from the output, the row with a NULL value in the customer_id column denotes the grand total row. 
+--The amount column of the grand total row showed the sum of all amounts in the output.
+
+SELECT
+   salesman_id,
+   customer_id,
+   SUM(quantity * unit_price) amount
+FROM
+   orders
+INNER JOIN order_items USING (order_id)
+WHERE
+   status      = 'Shipped' AND 
+   salesman_id IS NOT NULL AND 
+   EXTRACT(YEAR FROM order_date) = 2017
+GROUP BY
+   ROLLUP(salesman_id,customer_id);
+   
+-- ROLLUP multiple levels
+
+---------------------------------------------------------------------------------------------
+
+-- PIVOT
+
+--Oracle 11g introduced the new PIVOT clause that allows you to write cross-tabulation queries which 
+--transpose rows into columns, aggregating data in the process of the transposing. 
+--As a result, the output of a pivot operation returns more columns and fewer rows than the starting data set.
+
+-- The following illustrates the basic syntax of the Oracle PIVOT clause:
+
+SELECT 
+    select_list
+FROM 
+    table_name
+PIVOT [XML] ( 
+    pivot_clause
+    pivot_for_clause
+    pivot_in_clause 
+);
+
+-- In this syntax, following the PIVOT keyword are three clauses:
+
+-- pivot_clause specifies the column(s) that you want to aggregate. 
+-- The pivot_clause performs an implicitly GROUP BY based on all columns which are not specified in the clause, 
+-- along with values provided by the pivot_in_clause.
+-- pivot_for_clause specifies the column that you want to group or pivot.
+-- pivot_in_clause defines a filter for column(s) in the pivot_for_clause. 
+-- The aggregation for each value in the pivot_in_clause will be rotated into a separate column.
+
+CREATE VIEW order_stats AS
+SELECT 
+    category_name, 
+    status, 
+    order_id
+FROM 
+    order_items
+INNER JOIN orders USING (order_id)
+INNER JOIN products USING (product_id)
+INNER JOIN product_categories USING (category_id);
+
+SELECT * FROM order_stats;
+
+SELECT * FROM order_stats
+PIVOT(
+    COUNT(order_id) 
+    FOR category_name
+    IN ( 
+        'CPU',
+        'Video Card',
+        'Mother Board',
+        'Storage'
+    )
+)
+ORDER BY status;
+
+
+-------------------------------------------------------------------------------------------
+
+-- UNPIVOT
+-- The Oracle UNPIVOT clause allows you to transpose columns to rows. 
+-- The UNPIVOT clause is opposite to the PIVOT clause except that it does not de-aggregate data during the transposing process.
+
+CREATE TABLE sale_stats(
+    id INT PRIMARY KEY,
+    fiscal_year INT,
+    product_a INT,
+    product_b INT,
+    product_c INT
+);
+
+INSERT INTO sale_stats(id, fiscal_year, product_a, product_b, product_c)
+VALUES(1,2017, NULL, 200, 300);
+
+INSERT INTO sale_stats(id, fiscal_year, product_a, product_b, product_c)
+VALUES(2,2018, 150, NULL, 250);
+
+INSERT INTO sale_stats(id, fiscal_year, product_a, product_b, product_c)
+VALUES(3,2019, 150, 220, NULL);
+
+SELECT * FROM sale_stats;
+
+SELECT * FROM sale_stats
+UNPIVOT(
+    quantity  -- unpivot_clause
+    FOR product_code --  unpivot_for_clause
+    IN ( -- unpivot_in_clause
+        product_a AS 'A', 
+        product_b AS 'B', 
+        product_c AS 'C'
+    )
+);
+
+-- unpivot multiple columns
+
+DROP TABLE sale_stats;
+    
+CREATE TABLE sale_stats(
+    id INT PRIMARY KEY,
+    fiscal_year INT,
+    a_qty INT,
+    a_value DEC(19,2),
+    b_qty INT,
+    b_value DEC(19,2)
+);   
+
+INSERT INTO sale_stats(id, fiscal_year, a_qty, a_value, b_qty, b_value)
+VALUES(1, 2018, 100, 1000, 2000, 4000);
+
+INSERT INTO sale_stats(id, fiscal_year, a_qty, a_value, b_qty, b_value)
+VALUES(2, 2019, 150, 1500, 2500, 5000);
+
+SELECT * FROM sale_stats;
+
+SELECT * FROM sale_stats
+UNPIVOT (
+    (quantity, amount)
+    FOR product_code
+    IN (
+        (a_qty, a_value) AS 'A', 
+        (b_qty, b_value) AS 'B'        
+    )
+);
