@@ -1,0 +1,65 @@
+SET SERVEROUTPUT ON; 
+
+DECLARE n_sales NUMBER := 2000000; 
+BEGIN 
+   IF n_sales > 100000 THEN 
+      DBMS_OUTPUT.PUT_LINE( 'Sales revenue is greater than 100K ' ); 
+   END IF; 
+END;
+
+DECLARE
+  n_sales NUMBER := 300000;
+  n_commission NUMBER( 10, 2 ) := 0;
+BEGIN
+  IF n_sales > 200000 THEN
+    n_commission := n_sales * 0.1;
+  ELSIF n_sales <= 200000 AND n_sales > 100000 THEN 
+    n_commission := n_sales * 0.05;
+  ELSIF n_sales <= 100000 AND n_sales > 50000 THEN 
+    n_commission := n_sales * 0.03;
+  ELSE
+    n_commission := n_sales * 0.02;
+  END IF;
+END;
+
+
+DECLARE
+  c_grade CHAR( 1 );
+  c_rank  VARCHAR2( 20 );
+BEGIN
+  c_grade := 'B';
+  CASE c_grade
+  WHEN 'A' THEN
+    c_rank := 'Excellent' ;
+  WHEN 'B' THEN
+    c_rank := 'Very Good' ;
+  WHEN 'C' THEN
+    c_rank := 'Good' ;
+  WHEN 'D' THEN
+    c_rank := 'Fair' ;
+  WHEN 'F' THEN
+    c_rank := 'Poor' ;
+  ELSE
+    c_rank := 'No such grade' ;
+  END CASE;
+  DBMS_OUTPUT.PUT_LINE( c_rank );
+END;
+
+BEGIN
+  DBMS_OUTPUT.ENABLE;
+  FOR l_counter IN 1..5
+  LOOP
+    DBMS_OUTPUT.PUT_LINE( l_counter );
+  END LOOP;
+END;
+
+DECLARE
+   n_counter NUMBER := 1;
+BEGIN
+   WHILE n_counter <= 5
+      LOOP
+        DBMS_OUTPUT.PUT_LINE( 'Counter : ' || n_counter );
+        n_counter := n_counter + 1;
+        EXIT WHEN n_counter = 3;
+      END LOOP;
+END;
